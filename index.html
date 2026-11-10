@@ -2363,6 +2363,27 @@ function trackWishlist(eventName, product, clickEvent) {
 document.getElementById('btn-wishlist-header').addEventListener('click', () => {
   trackEvent('go_to_wishlist', { wishlist_count: wishlist.length });
 });
+// 8·9) banner_view / banner_click — 메인 상단 배너 슬라이더
+// 슬라이드가 화면에 60% 이상 보일 때 노출로 집계 (슬라이드당 1회), CTA 버튼 클릭 시 클릭으로 집계
+const viewedBanners = new Set();
+const bannerViewObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (!entry.isIntersecting) return;
+    const slide = entry.target;
+    const id = slide.dataset.bannerId;
+    if (viewedBanners.has(id)) return;
+    viewedBanners.add(id);
+    trackEvent('banner_view', { banner_id: id, banner_name: slide.dataset.bannerTitle });
+  });
+}, { threshold: 0.6 });
+document.querySelectorAll('#hero .banner-slide').forEach((slide) => bannerViewObserver.observe(slide));
+
+document.getElementById('hero').addEventListener('click', (e) => {
+  const cta = e.target.closest('.banner-cta');
+  if (!cta) return;
+  const slide = cta.closest('.banner-slide');
+  trackEvent('banner_click', { banner_id: slide.dataset.bannerId, banner_name: slide.dataset.bannerTitle });
+});
 </script>
 </body>
 </html>

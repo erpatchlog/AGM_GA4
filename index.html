@@ -1812,6 +1812,7 @@ function switchDetailTab(tab, btn) {
 }
 
 function buyNow(productId) {
+  trackDetailAction('purchase', productId);
   addToCart(productId, detailQty, true, selectedVariantId);
   goCheckout();
 }
@@ -1860,6 +1861,7 @@ function syncDetailPrice() {
 }
 
 function addToCartFromDetail(productId) {
+  trackDetailAction('add_to_cart', productId);
   addToCart(productId, detailQty, false, selectedVariantId);
 }
 
@@ -2274,6 +2276,77 @@ renderRecentlyViewed();
 tickDealTimer();
 setInterval(tickDealTimer, 1000);
 handleRoute();   // 최초 진입 경로 처리 (딥링크·새로고침 대응)
+// ────────────────────────────────
+// GA4 이벤트 추적 (텍소노미 기준) — dataLayer push → GTM
+// ────────────────────────────────
+function trackEvent(name, params) {
+  window.dataLayer = window.dataLayer || [];
+  // GTM은 dataLayer 값을 누적 보관하므로 이전 이벤트의 매개변수가 남지 않게 먼저 비운다
+  dataLayer.push({ promotion_name: undefined, item_name: undefined, section: undefined, item_option: undefined, value: undefined });
+  dataLayer.push(Object.assign({ event: name }, params));
+}
+
+// 메인 화면 상품 카드의 영역 이름 (특가 / 베스트 / 신상 / 전체상품)
+const TRACK_CARD_SELECTOR = '.deal-card, .best-card, .new-arrival-card, .product-card';
+function trackSectionOf(el) {
+  if (el.closest('#section-today-deal'))  return '특가';
+  if (el.closest('#section-best'))        return '베스트';
+  if (el.closest('#section-new-arrival')) return '신상';
+  if (el.closest('#section-all-products')) return '전체상품';
+  return null;
+}
+
+// 1) promotion_click — 시원 할인 프로모션 배너 클릭
+document.getElementById('event-banner-summer').addEventListener('click', () => {
+  trackEvent('promotion_click', { promotion_name: '시원 할인 프로모션' });
+});
+
+// 3) item_click — 메인 상품 클릭 (장바구니·찜 버튼 클릭은 제외)
+document.getElementById('page-home').addEventListener('click', (e) => {
+  if (e.target.closest('.btn-add-to-cart, .btn-wishlist')) return;
+  const card = e.target.closest(TRACK_CARD_SELECTOR);
+  const section = card && trackSectionOf(card);
+  if (!section) return;
+  trackEvent('item_click', { item_name: card.dataset.productName, section: section });
+});
+
+// 2) item_view — 메인 상품 카드가 화면에 50% 이상 노출될 때 (같은 영역·상품은 1회만)
+const viewedItems = new Set();
+const itemViewObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (!entry.isIntersecting) return;
+    const card = entry.target;
+    const section = trackSectionOf(card);
+    const key = section + '|' + card.dataset.productId;
+    itemViewObserver.unobserve(card);
+    if (!section || viewedItems.has(key)) return;
+    viewedItems.add(key);
+    trackEvent('item_view', { item_name: card.dataset.productName, section: section });
+  });
+}, { threshold: 0.5 });
+
+function observeItemViews() {
+  document.querySelectorAll('#page-home ' + TRACK_CARD_SELECTOR.split(', ').join(', #page-home ')).forEach((card) => {
+    if (card.dataset.trackObserved) return;
+    card.dataset.trackObserved = '1';
+    itemViewObserver.observe(card);
+  });
+}
+// 카드는 JS로 다시 그려지므로 변경될 때마다 새 카드를 관찰 대상에 추가한다
+new MutationObserver(observeItemViews).observe(document.getElementById('page-home'), { childList: true, subtree: true });
+observeItemViews();
+
+// 4·5) add_to_cart / purchase — 상품 상세에서 옵션·수량 기준으로 전송
+function trackDetailAction(eventName, productId) {
+  const product = PRODUCTS.find(p => p.id === productId);
+  if (!product) return;
+  const variant = getVariant(product, selectedVariantId);
+  trackEvent(eventName, {
+    item_name: product.name,
+    item_option: variant.label,
+    value: variant.price * detailQty
+  });
+}
 </script>
 </body>
 </html>

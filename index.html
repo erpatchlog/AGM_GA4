@@ -2359,6 +2359,10 @@ function trackWishlist(eventName, product, clickEvent) {
   }
   trackEvent(eventName, { item_name: product.name, section: section, value: product.price, currency: 'KRW' });
 }
+// 7) go_to_wishlist — 헤더 하트(찜 목록 이동) 클릭, 클릭 시점의 찜 상품 수 전송
+document.getElementById('btn-wishlist-header').addEventListener('click', () => {
+  trackEvent('go_to_wishlist', { wishlist_count: wishlist.length });
+});
 </script>
 </body>
 </html>

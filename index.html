@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <!-- Google Tag Manager / GA4 -->
-  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-52SLDDCC"></script>
+  <!-- Google tag (gtag.js) - GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-0BVT5FCPXL"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    dataLayer.push({'gtm.start': new Date().getTime(), event: 'gtm.js'});
+    gtag('config', 'G-0BVT5FCPXL');
   </script>
-  <!-- End Google Tag Manager -->
+  <!-- End Google tag -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGM마켓 | 신선식품 전문 온라인몰</title>
@@ -2279,13 +2279,10 @@ tickDealTimer();
 setInterval(tickDealTimer, 1000);
 handleRoute();   // 최초 진입 경로 처리 (딥링크·새로고침 대응)
 // ────────────────────────────────
-// GA4 이벤트 추적 (텍소노미 기준) — dataLayer push → GTM
+// GA4 이벤트 추적 (텍소노미 기준) — gtag.js로 GA4에 직접 전송
 // ────────────────────────────────
 function trackEvent(name, params) {
-  window.dataLayer = window.dataLayer || [];
-  // GTM은 dataLayer 값을 누적 보관하므로 이전 이벤트의 매개변수가 남지 않게 먼저 비운다
-  dataLayer.push({ promotion_name: undefined, item_name: undefined, section: undefined, item_option: undefined, value: undefined });
-  dataLayer.push(Object.assign({ event: name }, params));
+  if (typeof gtag === 'function') gtag('event', name, params);
 }
 
 // 메인 화면 상품 카드의 영역 이름 (특가 / 베스트 / 신상 / 전체상품)
@@ -2346,7 +2343,8 @@ function trackDetailAction(eventName, productId) {
   trackEvent(eventName, {
     item_name: product.name,
     item_option: variant.label,
-    value: variant.price * detailQty
+    value: variant.price * detailQty,
+    currency: 'KRW'
   });
 }
 // 6) add_to_wishlist / remove_from_wishlist — 카드·상세·찜목록의 하트 클릭
@@ -2359,7 +2357,7 @@ function trackWishlist(eventName, product, clickEvent) {
     else if (btn.closest('#page-wishlist')) section = '찜목록';
     else section = trackSectionOf(btn) || '기타';
   }
-  trackEvent(eventName, { item_name: product.name, section: section, value: product.price });
+  trackEvent(eventName, { item_name: product.name, section: section, value: product.price, currency: 'KRW' });
 }
 </script>
 </body>

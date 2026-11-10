@@ -1119,9 +1119,11 @@ function toggleWishlist(productId, event) {
   const p = PRODUCTS.find(x => x.id === productId);
   if (isWished(productId)) {
     wishlist = wishlist.filter(id => id !== productId);
+    trackWishlist('remove_from_wishlist', p, event);
     showToast('찜 목록에서 제거했습니다');
   } else {
     wishlist.push(productId);
+    trackWishlist('add_to_wishlist', p, event);
     showToast('♥ 찜 목록에 추가했습니다');
   }
   saveWishlist();
@@ -2346,6 +2348,18 @@ function trackDetailAction(eventName, productId) {
     item_option: variant.label,
     value: variant.price * detailQty
   });
+}
+// 6) add_to_wishlist / remove_from_wishlist — 카드·상세·찜목록의 하트 클릭
+function trackWishlist(eventName, product, clickEvent) {
+  if (!product) return;
+  const btn = clickEvent && clickEvent.target && clickEvent.target.closest('.btn-wishlist, #btn-wishlist-detail');
+  let section = '기타';
+  if (btn) {
+    if (btn.closest('#page-detail'))        section = '상품상세';
+    else if (btn.closest('#page-wishlist')) section = '찜목록';
+    else section = trackSectionOf(btn) || '기타';
+  }
+  trackEvent(eventName, { item_name: product.name, section: section, value: product.price });
 }
 </script>
 </body>
